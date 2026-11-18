@@ -12,14 +12,6 @@ pipeline {
         timeout(time: 20, unit: 'MINUTES')
     }
 
-    parameters {
-        booleanParam(
-            name: 'NOTIFY_GRADER',
-            defaultValue: true,
-            description: 'Also email the instructor. Required for grading; untick only while testing.'
-        )
-    }
-
     triggers {
         githubPush()
         // Safety net if the webhook is ever unreachable; uncomment before grading:
@@ -40,7 +32,8 @@ pipeline {
         // ---- Notification --------------------------------------------------
         // From address comes from the global Extended E-mail config
         // (smtp.gmail.com:465, SSL, authenticated as ateebakmal009@gmail.com).
-        GRADER_EMAIL   = 'qasimalik@gmail.com'
+        // Build mail goes to the commit author only. To also notify the
+        // instructor, add 'qasimalik@gmail.com' to toList in post{} below.
         SENDER_EMAIL   = 'ateebakmal009@gmail.com'   // declared on the Google Form
     }
 
@@ -164,21 +157,16 @@ print(json.dumps(m))
             script {
                 def result = currentBuild.currentResult ?: 'UNKNOWN'
 
-                // Always tell whoever pushed. Also tell the instructor, because
-                // the autograder may commit as a bot whose address bounces.
+                // Notify the author of the commit that triggered this build, and
+                // nobody else. GitHub noreply addresses are dropped because mail
+                // to them is discarded rather than delivered.
                 def toList = []
                 def committer = (env.COMMITTER_EMAIL ?: '').trim()
                 if (committer.contains('@') && !committer.contains('noreply')) {
                     toList.add(committer)
                 }
-                // params is null on the very first run after this block is added,
-                // so treat "unset" as enabled rather than silently skipping.
-                def notifyGrader = (params.NOTIFY_GRADER == null) ? true : params.NOTIFY_GRADER
-                if (notifyGrader && !toList.contains(env.GRADER_EMAIL)) {
-                    toList.add(env.GRADER_EMAIL)
-                }
                 def recipients = toList.join(',')
-                echo "Notifying: ${recipients ?: '(nobody)'}"
+                echo "Notifying: ${recipients ?: '(nobody - committer address not deliverable)'}"
 
                 if (recipients) {
                     emailext(
