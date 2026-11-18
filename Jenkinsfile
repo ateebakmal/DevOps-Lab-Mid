@@ -30,9 +30,8 @@ pipeline {
         STUDENT_ID     = 'FA23-BDS-004'
 
         // ---- Docker Hub (field 7 on the Google Form) ----------------------
-        IMAGE     = 'ateebakmal/midterm-fa23-bds-004'
-        // credentials() also defines DOCKERHUB_USR / DOCKERHUB_PSW, used by the push stage.
-        DOCKERHUB = credentials('dockerhub-creds-devops-mid')
+        IMAGE          = 'ateebakmal/midterm-fa23-bds-004'
+        DOCKERHUB_CRED = 'dockerhub-creds-devops-mid'
 
         // ---- Deployment ----------------------------------------------------
         CONTAINER      = 'midterm-fa23-bds-004'
@@ -134,14 +133,20 @@ print(json.dumps(m))
 
         stage('Push to Docker Hub') {
             steps {
-                sh '''
-                    set -eu
-                    set +x
-                    echo "${DOCKERHUB_PSW}" | docker login -u "${DOCKERHUB_USR}" --password-stdin
-                    docker push "${IMAGE}:${BUILD_NUMBER}"
-                    docker push "${IMAGE}:latest"
-                    docker logout
-                '''
+                withCredentials([usernamePassword(
+                    credentialsId: env.DOCKERHUB_CRED,
+                    usernameVariable: 'DH_USER',
+                    passwordVariable: 'DH_PASS'
+                )]) {
+                    sh '''
+                        set -eu
+                        set +x
+                        trap 'docker logout >/dev/null 2>&1 || true' EXIT
+                        echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
+                        docker push "${IMAGE}:${BUILD_NUMBER}"
+                        docker push "${IMAGE}:latest"
+                    '''
+                }
             }
         }
 
@@ -154,7 +159,8 @@ print(json.dumps(m))
 
     post {
         always {
-            sh 'docker logout >/dev/null 2>&1 || true'
+            // No sh step here: post{} can run without a node context, and a
+            // throw before emailext would swallow the failure notification.
             script {
                 def result = currentBuild.currentResult ?: 'UNKNOWN'
 
