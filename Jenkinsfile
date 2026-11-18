@@ -31,7 +31,7 @@ pipeline {
 
         // ---- Docker Hub (field 7 on the Google Form) ----------------------
         IMAGE          = 'ateebakmal/midterm-fa23-bds-004'
-        DOCKERHUB_CRED = 'dockerhub-creds-devops-mid'
+        DOCKERHUB_CRED = 'dockerhub-creds-devops-mid-global'
 
         // ---- Deployment ----------------------------------------------------
         CONTAINER      = 'midterm-fa23-bds-004'
