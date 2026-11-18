@@ -1,0 +1,5 @@
+# Windows dev box, Linux build agent: pin LF everywhere so the Dockerfile,
+# shell snippets in the Jenkinsfile, and the dataset digest stay deterministic.
+* text=auto eol=lf
+*.csv text eol=lf
+*.joblib binary
