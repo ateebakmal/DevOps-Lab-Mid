@@ -81,7 +81,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'docker run --rm "${IMAGE}:${BUILD_NUMBER}" pytest -q'
+                sh 'docker run --rm "${IMAGE}:${BUILD_NUMBER}" python -m pytest -q'
             }
         }
 
@@ -183,6 +183,8 @@ print(json.dumps(m))
                 if (recipients) {
                     emailext(
                         to: recipients,
+                        from: env.SENDER_EMAIL,
+                        replyTo: env.SENDER_EMAIL,
                         subject: "${env.STUDENT_ID} - DevOps Lab Midterm - Build #${env.BUILD_NUMBER} - ${result}",
                         mimeType: 'text/plain',
                         body: """CSC418 DevOps for Cloud Computing - Lab Midterm
